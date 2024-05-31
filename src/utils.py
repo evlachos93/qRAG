@@ -36,16 +36,15 @@ def load_pdf_document(pdf_paths):
 def load_markdown_text(file_paths):
     markdown_texts = []
     for path in file_paths:
-        if '.pdf' not in path:
-            print('Loading markdown text from:', path)
-            with open(path, "r") as file:
-                markdown_text = file.read()
-            markdown_texts.append(markdown_text)
+        print('Loading markdown text from:', path.replace('.pdf', '.md'))
+        with open(path.replace('pdf','md'), "r") as file:
+            markdown_text = file.read()
+        markdown_texts.append(markdown_text)
     return markdown_texts
 
-def get_file_paths(directory_path):
+def get_file_paths(directory_path, format="pdf"):
     try:
-        file_paths = glob.glob(directory_path + "*")
+        file_paths = glob.glob(directory_path + "*"+format)
         # Print the file paths
         for file_path in file_paths:
             print(file_path)

@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": ".",
+		},
+	
+	],
+	"settings": {
+		"editor.wordWrap": "on", 
+		"python.terminal.activateEnvInCurrentTerminal": true,
+    	"python.defaultInterpreterPath": "./qrag-env/Scripts/python",
+	},
+	"files.autoSave": "afterDelay", // Auto save files after a delay
+	"files.autoSaveDelay": 1000
+}
