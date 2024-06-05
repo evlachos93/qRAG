@@ -57,12 +57,24 @@ def split_docs(files, headers_to_split_on=None):
     splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on,
                                     strip_headers=False,)
     # splitter.create_documents(paths)
+    md_header_splits = []
+    chunks = 0
     for file in files:
-        md_header_splits = splitter.split_text(file)
+        md_header_splits.append( splitter.split_text(file))
+        chunks += len(md_header_splits[-1])
     
+    md_header_splits = flatten_list(md_header_splits)
+
     print(f"{len(files)} documents split into {len(md_header_splits)} chunks")
     
     return md_header_splits
+
+def flatten_list(nested_list):
+    return [item for sublist in nested_list for item in sublist]
+
+# def edit_metadata(doc_chunks):
+#     for chunk in doc_chunks:
+#         chunk.metadata = 
 
 def save_markdown_text(markdown_texts, file_paths):
     for i, markdown_text in enumerate(markdown_texts):
