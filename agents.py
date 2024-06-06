@@ -39,7 +39,7 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 agent_prompts = dict(
-    router = dict(
+    question_router = dict(
         prompt = PromptTemplate(
             template="""<|begin_of_text|><|start_header_id|>system<|end_header_id|> You are an expert at routing a 
             user question to a vectorstore or web search. Use the vectorstore for questions on LLM  agents, 

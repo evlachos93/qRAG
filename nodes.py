@@ -3,12 +3,13 @@
 from langchain.schema import Document
 
 class nodes:
-    def __init__(self,crew, web_search_tool):
+    def __init__(self,crew, web_search_tool, vector_database):
+        self.retriever = vector_database.as_retriever(search_type='mmr', search_kwargs={"k":5, "fetch_k": 20})
         self.crew = crew
         self.web_search_tool = web_search_tool
         self.node_dict = {
         "retrieve": self.retrieve,
-        "websearch": self.web_search,
+        "web_search": self.web_search,
         "grade_documents": self.grade_documents,
         "generate": self.generate,
         "route_question": self.route_question,
@@ -21,7 +22,7 @@ class nodes:
     def __contains__(self, key):
         return key in self.node_dict
 
-    def retrieve(crew,state):
+    def retrieve(self,state):
         """
         Retrieve documents from vectorstore
 
@@ -35,10 +36,10 @@ class nodes:
         question = state["question"]
 
         # Retrieval
-        documents = crew["retriever"].invoke(question)
+        documents = self.retriever.invoke(question)
         return {"documents": documents, "question": question}
     #
-    def generate(crew,state):
+    def generate(self,state):
         """
         Generate answer using RAG on retrieved documents
 
@@ -53,10 +54,10 @@ class nodes:
         documents = state["documents"]
         
         # RAG generation
-        generation = crew["rag_chain"].invoke({"context": documents, "question": question})
+        generation = self.crew["rag_chain"].invoke({"context": documents, "question": question})
         return {"documents": documents, "question": question, "generation": generation}
     #
-    def grade_documents(crew,state):
+    def grade_documents(self, state):
         """
         Determines whether the retrieved documents are relevant to the question
         If any document is not relevant, we will set a flag to run web search
@@ -76,7 +77,7 @@ class nodes:
         filtered_docs = []
         web_search = "No"
         for d in documents:
-            score = crew["retrieval_grader"].invoke({"question": question, "document": d.page_content})
+            score = self.crew["retrieval_grader"].invoke({"question": question, "document": d.page_content})
             grade = score['score']
             # Document relevant
             if grade.lower() == "yes":
@@ -91,7 +92,7 @@ class nodes:
                 continue
         return {"documents": filtered_docs, "question": question, "web_search": web_search}
     #
-    def web_search(web_search_tool,state):
+    def web_search(self, state):
         """
         Web search based based on the question
 
@@ -107,7 +108,7 @@ class nodes:
         documents = state["documents"]
 
         # Web search
-        docs = web_search_tool.invoke({"query": question})
+        docs = self.web_search_tool.invoke({"query": question})
         web_results = "\n".join([d["content"] for d in docs])
         web_results = Document(page_content=web_results)
         if documents is not None:
@@ -116,7 +117,7 @@ class nodes:
             documents = [web_results]
         return {"documents": documents, "question": question}
 
-    def route_question(crew, state):
+    def route_question(self, state):
         """
         Route question to web search or RAG.
 
@@ -130,7 +131,7 @@ class nodes:
         print("---ROUTE QUESTION---")
         question = state["question"]
         print(question)
-        source = crew["question_router"].invoke({"question": question})  
+        source = self.crew["question_router"].invoke({"question": question})  
         print(source)
         print(source['datasource'])
         if source['datasource'] == 'web_search':
@@ -140,7 +141,7 @@ class nodes:
             print("---ROUTE QUESTION TO RAG---")
             return "vectorstore"
         
-    def decide_to_generate(state):
+    def decide_to_generate(self, state):
         """
         Determines whether to generate an answer, or add web search
 
@@ -166,7 +167,7 @@ class nodes:
             print("---DECISION: GENERATE---")
             return "generate"
         
-    def grade_generation_v_documents_and_question(crew,state):
+    def grade_generation_v_documents_and_question(self, state):
         """
         Determines whether the generation is grounded in the document and answers question.
 
@@ -182,7 +183,7 @@ class nodes:
         documents = state["documents"]
         generation = state["generation"]
 
-        score = crew["hallucination_grader"].invoke({"documents": documents, "generation": generation})
+        score = self.crew["hallucination_grader"].invoke({"documents": documents, "generation": generation})
         grade = score['score']
 
         # Check hallucination
@@ -190,7 +191,7 @@ class nodes:
             print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
             # Check question-answering
             print("---GRADE GENERATION vs QUESTION---")
-            score = crew["answer_grader"].invoke({"question": question,"generation": generation})
+            score = self.crew["answer_grader"].invoke({"question": question,"generation": generation})
             print(generation)
             grade = score['score']
             if grade == "yes":
